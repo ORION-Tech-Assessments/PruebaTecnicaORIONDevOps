@@ -1,0 +1,66 @@
+services:
+  db_test:
+    image: 'postgres:16.8'
+    volumes:
+      - test_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: resception_test
+    ports:
+      - "5433:5432"
+    networks:
+      - test_network
+
+  rabbitmq:
+    image: 'rabbitmq:3-management'
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - test_network
+
+  pgadmin:
+    image: 'dpage/pgadmin4:8.11'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db_test
+    networks:
+      - test_network
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - DB_HOST=db_test
+      - DB_PORT=5432
+      - DB_NAME=resception_test
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+    networks:
+      - test_network
+    depends_on:
+      - db_test
+      - rabbitmq
+
+volumes:
+  test_data:
+
+networks:
+  test_network:
+    external: true
+    name: orion-city-network
